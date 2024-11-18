@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <title>Email Tracker</title>
+  </head>
+  <body>
+    <label for="email">Enter your Gmail address:</label><br>
+    <input type="email" id="email" name="email"><br>
+    <label for="services">Subscribed services:</label><br>
+    <input type="text" id="services" name="services"><br>
+    <button onclick="addPlus()">Add Plus</button>
+    <button onclick="saveEmail()">Save</button>
+    <button onclick="viewSaves()">View Saves</button>
+    <button onclick="exportSettings()">Export Settings</button>
+    <input type="file" id="fileInput" accept=".json">
+    <button onclick="importSettings()">Import Settings</button>
+    <button onclick="clearAllSaves()">Clear All Saves</button>
+
+    <div id="savedEmails"></div>
+
+    <script>
+      function addPlus() {
+        var email = document.getElementById("email").value;
+        var username = email.substring(0, email.indexOf("@"));
+        var domain = email.substring(email.indexOf("@") + 1);
+        var services = document.getElementById("services").value;
+        var newEmail = username + "+" + services + "@" + domain;
+        document.getElementById("email").value = newEmail;
+      }
+
+      function saveEmail() {
+        var email = document.getElementById("email").value;
+        var services = document.getElementById("services").value;
+        var savedEmails = localStorage.getItem("savedEmails");
+
+        if (savedEmails) {
+          savedEmails = JSON.parse(savedEmails);
+        } else {
+          savedEmails = [];
+        }
+
+        savedEmails.push({ email: email, services: services, date: new Date().toLocaleString() });
+        localStorage.setItem("savedEmails", JSON.stringify(savedEmails));
+        alert("Email saved!");
+      }
+
+      function viewSaves() {
+        var savedEmails = JSON.parse(localStorage.getItem("savedEmails"));
+        var savedEmailsDiv = document.getElementById("savedEmails");
+        savedEmailsDiv.innerHTML = "";
+
+        if (savedEmails) {
+          savedEmails.forEach(function (item, index) {
+            var emailDiv = document.createElement("div");
+            emailDiv.textContent = `Email: ${item.email}, Services: ${item.services}, Save Date: ${item.date}`;
+            var deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete";
+            deleteButton.onclick = function () {
+              deleteSave(index);
+            };
+
+            var restoreButton = document.createElement("button");
+            restoreButton.textContent = "Restore";
+            restoreButton.onclick = function () {
+              restoreSave(item.email, item.services, index);
+            };
+
+            emailDiv.appendChild(deleteButton);
+            emailDiv.appendChild(restoreButton);
+            savedEmailsDiv.appendChild(emailDiv);
+          });
+        }
+      }
+
+      function deleteSave(index) {
+        var savedEmails = JSON.parse(localStorage.getItem("savedEmails"));
+
+        if (savedEmails && index < savedEmails.length) {
+          savedEmails.splice(index, 1);
+          localStorage.setItem("savedEmails", JSON.stringify(savedEmails));
+          viewSaves();
+        }
+      }
+
+      function restoreSave(email, services, index) {
+        document.getElementById("email").value = email;
+        document.getElementById("services").value = services;
+
+        // Automatically focus on the email field
+        document.getElementById("email").focus();
+
+        // Automatically delete the restore
+        deleteSave(index);
+      }
+
+      function exportSettings() {
+        var savedEmails = JSON.parse(localStorage.getItem("savedEmails"));
+
+        if (savedEmails) {
+          var data = JSON.stringify(savedEmails, null, 2);
+          var blob = new Blob([data], { type: 'application/json' });
+          var a = document.createElement('a');
+          a.href = window.URL.createObjectURL(blob);
+          a.download = 'saved_settings.json';
+          a.click();
+        } else {
+          alert("No saved settings to export.");
+        }
+      }
+
+      function importSettings() {
+        var fileInput = document.getElementById('fileInput');
+        var file = fileInput.files[0];
+
+        if (file) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var content = e.target.result;
+            var importedSettings = JSON.parse(content);
+            localStorage.setItem("savedEmails", JSON.stringify(importedSettings));
+            alert("Settings imported successfully!");
+            viewSaves();
+          };
+          reader.readAsText(file);
+        } else {
+          alert("Please select a valid JSON file.");
+        }
+      }
+
+      function clearAllSaves() {
+        localStorage.removeItem("savedEmails");
+        viewSaves();  // Refresh the displayed list after clearing
+        alert("All saves have been cleared.");
+      }
+    </script>
+  </body>
+</html>Enter file contents here
